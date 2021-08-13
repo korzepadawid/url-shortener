@@ -73,7 +73,7 @@ class UrlControllerTest {
         .contentType(MediaType.APPLICATION_JSON)
         .content(JsonMapper.toJson(urlWriteDto)))
         .andExpect(status().isBadRequest())
-        .andExpect(jsonPath("$.url", is(URL_ERROR_MESSAGE)));
+        .andExpect(jsonPath("$.details.url", is(URL_ERROR_MESSAGE)));
   }
 
   @Test
@@ -85,7 +85,7 @@ class UrlControllerTest {
         .contentType(MediaType.APPLICATION_JSON)
         .content(JsonMapper.toJson(urlWriteDto)))
         .andExpect(status().isBadRequest())
-        .andExpect(jsonPath("$.expiringAt", is(EXPIRING_AT_ERROR_MESSAGE)));
+        .andExpect(jsonPath("$.details.expiringAt", is(EXPIRING_AT_ERROR_MESSAGE)));
   }
 
   @Test
@@ -98,8 +98,8 @@ class UrlControllerTest {
         .contentType(MediaType.APPLICATION_JSON)
         .content(JsonMapper.toJson(urlWriteDto)))
         .andExpect(status().isBadRequest())
-        .andExpect(jsonPath("$.expiringAt", is(EXPIRING_AT_ERROR_MESSAGE)))
-        .andExpect(jsonPath("$.url", is(URL_ERROR_MESSAGE)));
+        .andExpect(jsonPath("$.details.expiringAt", is(EXPIRING_AT_ERROR_MESSAGE)))
+        .andExpect(jsonPath("$.details.url", is(URL_ERROR_MESSAGE)));
   }
 
   @Test
@@ -118,10 +118,12 @@ class UrlControllerTest {
 
   @Test
   void getOne_WhenHttpGetWithNotExistingOrExpiredUrl_ThenReturnsStatus404() throws Exception {
-    when(urlService.getUrl(anyString())).thenThrow(ResourceNotFoundException.class);
+    final String errorMessage = "Not found";
+    when(urlService.getUrl(anyString())).thenThrow(new ResourceNotFoundException(errorMessage));
 
     mockMvc.perform(get(UrlController.BASE_URL + "/ds2"))
-        .andExpect(status().isNotFound());
+        .andExpect(status().isNotFound())
+        .andExpect(jsonPath("$.message", is(errorMessage)));
   }
 
   @Test

@@ -1,7 +1,9 @@
 package io.github.korzepadawid.urlshortener.api.v1.controllers;
 
+import io.github.korzepadawid.urlshortener.api.v1.models.RestException;
 import io.github.korzepadawid.urlshortener.exceptions.ResourceNotFoundException;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -18,18 +20,28 @@ public class RestControllerExceptionHandler {
   @ExceptionHandler(ResourceNotFoundException.class)
   public ResponseEntity<Object> handleResourceNotFound(Exception exception) {
     log.error(exception.getLocalizedMessage());
-    return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+
+    HttpStatus httpStatus = HttpStatus.NOT_FOUND;
+    RestException restException = new RestException(exception.getLocalizedMessage(),
+        httpStatus, null);
+
+    return new ResponseEntity<>(restException, httpStatus);
   }
 
   @ExceptionHandler(MethodArgumentNotValidException.class)
   public ResponseEntity<Object> handleValidationErrors(MethodArgumentNotValidException exception) {
     log.error("Validation error.");
+
     Map<String, String> errors = new HashMap<>();
 
     exception.getBindingResult()
         .getAllErrors()
         .forEach(error -> errors.put(((FieldError) error).getField(), error.getDefaultMessage()));
 
-    return new ResponseEntity<>(errors, HttpStatus.BAD_REQUEST);
+    HttpStatus httpStatus = HttpStatus.BAD_REQUEST;
+    RestException restException = new RestException("Validation error.",
+        httpStatus, errors);
+
+    return new ResponseEntity<>(restException, HttpStatus.BAD_REQUEST);
   }
 }
