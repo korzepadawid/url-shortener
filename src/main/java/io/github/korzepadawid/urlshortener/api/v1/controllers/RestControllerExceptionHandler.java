@@ -23,7 +23,7 @@ public class RestControllerExceptionHandler {
 
     HttpStatus httpStatus = HttpStatus.NOT_FOUND;
     RestException restException = new RestException(exception.getLocalizedMessage(),
-        httpStatus, null);
+        httpStatus.value(), null);
 
     return new ResponseEntity<>(restException, httpStatus);
   }
@@ -40,7 +40,7 @@ public class RestControllerExceptionHandler {
 
     HttpStatus httpStatus = HttpStatus.BAD_REQUEST;
     RestException restException = new RestException("Validation error.",
-        httpStatus, errors);
+        httpStatus.value(), errors);
 
     return new ResponseEntity<>(restException, HttpStatus.BAD_REQUEST);
   }
