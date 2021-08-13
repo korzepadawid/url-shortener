@@ -10,6 +10,6 @@ public interface UrlRepository {
 
   Optional<Url> findFirstByUrlAndExpiringAtIsNull(String url);
 
-  Optional<Url> findFirstByIdAndExpiringAtAfterOrExpiringAtIsNull(Long id,
+  Optional<Url> findExistingNonExpiredUrl(Long id,
       LocalDateTime expiringAt);
 }

@@ -24,7 +24,7 @@ public class UrlServiceImpl implements UrlService {
     Optional<Url> optionalUrl = urlRepository
         .findFirstByUrlAndExpiringAtIsNull(urlWriteDto.getUrl());
 
-    if (optionalUrl.isPresent()) {
+    if (optionalUrl.isPresent() && urlWriteDto.getExpiringAt() == null) {
       return urlMapper.convertUrlToUrlReadDto(optionalUrl.get());
     }
 
@@ -38,7 +38,7 @@ public class UrlServiceImpl implements UrlService {
   public UrlReadDto getUrl(String encodedId) {
     Long decodedId = base62Service.decode(encodedId);
     Url url = urlRepository
-        .findFirstByIdAndExpiringAtAfterOrExpiringAtIsNull(decodedId, LocalDateTime.now())
+        .findExistingNonExpiredUrl(decodedId, LocalDateTime.now())
         .orElseThrow(() -> new ResourceNotFoundException(
             "Invalid encoded id: " + encodedId + ". Url not found."));
 

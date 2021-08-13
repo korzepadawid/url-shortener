@@ -101,7 +101,7 @@ class UrlServiceImplTest {
   @Test
   void getUrl_WhenNonExistingOrExpiredUrl_ThenThrowsResourceNotFoundException() {
     when(base62Service.decode(anyString())).thenReturn(DECODED_ID);
-    when(urlRepository.findFirstByIdAndExpiringAtAfterOrExpiringAtIsNull(eq(DECODED_ID),
+    when(urlRepository.findExistingNonExpiredUrl(eq(DECODED_ID),
         any(LocalDateTime.class))).thenReturn(Optional.empty());
 
     Throwable exception = catchThrowable(() -> urlService.getUrl(BASE62ENCODED_ID));
@@ -114,7 +114,7 @@ class UrlServiceImplTest {
   @Test
   void getUrl_WhenExistingUrl_ThenReturnsUrl() {
     when(base62Service.decode(anyString())).thenReturn(DECODED_ID);
-    when(urlRepository.findFirstByIdAndExpiringAtAfterOrExpiringAtIsNull(eq(DECODED_ID),
+    when(urlRepository.findExistingNonExpiredUrl(eq(DECODED_ID),
         any(LocalDateTime.class))).thenReturn(Optional.of(url));
     when(urlMapper.convertUrlToUrlReadDto(any(Url.class))).thenReturn(urlReadDto);
 
