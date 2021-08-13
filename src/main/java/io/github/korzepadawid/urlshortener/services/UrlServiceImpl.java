@@ -22,9 +22,9 @@ public class UrlServiceImpl implements UrlService {
   @Override
   public UrlReadDto createUrl(UrlWriteDto urlWriteDto) {
     Optional<Url> optionalUrl = urlRepository
-        .findFirstByUrlAndExpiringAtIsNull(urlWriteDto.getUrl());
+        .findAlreadyExistingUrl(urlWriteDto.getUrl(), urlWriteDto.getExpiringAt());
 
-    if (optionalUrl.isPresent() && urlWriteDto.getExpiringAt() == null) {
+    if (optionalUrl.isPresent()) {
       return urlMapper.convertUrlToUrlReadDto(optionalUrl.get());
     }
 

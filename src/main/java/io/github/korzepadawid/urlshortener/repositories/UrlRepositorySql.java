@@ -10,10 +10,10 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface UrlRepositorySql extends UrlRepository, CrudRepository<Url, Long> {
 
-  @Query("from Url u where u.url=:url and u.expiringAt is null")
-  Optional<Url> findFirstByUrlAndExpiringAtIsNull(String url);
-
   @Query("from Url u where u.id=:id and (u.expiringAt > :expiringAt or u.expiringAt is null)")
   Optional<Url> findExistingNonExpiredUrl(Long id,
       LocalDateTime expiringAt);
+
+  @Query("from Url u where u.url=:url and (u.expiringAt=:expiringAt or (:expiringAt is null and u.expiringAt is null ) )")
+  Optional<Url> findAlreadyExistingUrl(String url, LocalDateTime expiringAt);
 }

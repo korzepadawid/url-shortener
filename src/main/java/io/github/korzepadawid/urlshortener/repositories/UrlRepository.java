@@ -8,8 +8,8 @@ public interface UrlRepository {
 
   Url save(Url url);
 
-  Optional<Url> findFirstByUrlAndExpiringAtIsNull(String url);
-
   Optional<Url> findExistingNonExpiredUrl(Long id,
       LocalDateTime expiringAt);
+
+  Optional<Url> findAlreadyExistingUrl(String url, LocalDateTime expiringAt);
 }

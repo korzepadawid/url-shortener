@@ -70,7 +70,9 @@ class UrlServiceImplTest {
 
   @Test
   void createUrl_WhenExistingNeverExpiringUrl_ThenReturnsOldUrlInsteadOfCreatingNew() {
-    when(urlRepository.findFirstByUrlAndExpiringAtIsNull(anyString())).thenReturn(Optional.of(url));
+    when(urlRepository
+        .findAlreadyExistingUrl(eq(urlWriteDto.getUrl()), eq(urlWriteDto.getExpiringAt())))
+        .thenReturn(Optional.of(url));
     when(urlMapper.convertUrlToUrlReadDto(any(Url.class))).thenReturn(urlReadDto);
 
     UrlReadDto result = urlService.createUrl(urlWriteDto);
@@ -84,7 +86,9 @@ class UrlServiceImplTest {
 
   @Test
   void createUrl_WhenNonExistingOrExpiredUrl_ThenReturnsCreatedUrl() {
-    when(urlRepository.findFirstByUrlAndExpiringAtIsNull(anyString())).thenReturn(Optional.empty());
+    when(urlRepository
+        .findAlreadyExistingUrl(eq(urlWriteDto.getUrl()), eq(urlWriteDto.getExpiringAt())))
+        .thenReturn(Optional.empty());
     when(urlMapper.convertUrlWriteDtoToUrl(any(UrlWriteDto.class))).thenReturn(url);
     when(urlRepository.save(any(Url.class))).thenReturn(url);
     when(urlMapper.convertUrlToUrlReadDto(any(Url.class))).thenReturn(urlReadDto);
