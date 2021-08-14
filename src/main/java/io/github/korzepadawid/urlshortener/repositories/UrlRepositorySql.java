@@ -16,4 +16,6 @@ public interface UrlRepositorySql extends UrlRepository, CrudRepository<Url, Lon
 
   @Query("from Url u where u.url=:url and (u.expiringAt=:expiringAt or (:expiringAt is null and u.expiringAt is null ) )")
   Optional<Url> findAlreadyExistingUrl(String url, LocalDateTime expiringAt);
+
+  void deleteUrlsByExpiringAtBefore(LocalDateTime expiringAt);
 }

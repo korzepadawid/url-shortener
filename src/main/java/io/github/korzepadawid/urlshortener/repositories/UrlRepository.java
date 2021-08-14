@@ -12,4 +12,6 @@ public interface UrlRepository {
       LocalDateTime expiringAt);
 
   Optional<Url> findAlreadyExistingUrl(String url, LocalDateTime expiringAt);
+
+  void deleteUrlsByExpiringAtBefore(LocalDateTime expiringAt);
 }

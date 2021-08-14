@@ -26,4 +26,8 @@ public class IndexController {
     log.info("Redirecting to " + originalUrl);
     return "redirect:" + originalUrl;
   }
+
+  @GetMapping("favicon.ico")
+  public void handleFavicon() {
+  }
 }
