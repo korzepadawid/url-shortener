@@ -7,6 +7,7 @@ import io.github.korzepadawid.urlshortener.exceptions.ResourceNotFoundException;
 import io.github.korzepadawid.urlshortener.models.Url;
 import io.github.korzepadawid.urlshortener.repositories.UrlRepository;
 import java.time.LocalDateTime;
+import java.util.Objects;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -21,10 +22,12 @@ public class UrlServiceImpl implements UrlService {
 
   @Override
   public UrlReadDto createUrl(UrlWriteDto urlWriteDto) {
-    Optional<Url> optionalUrl = urlRepository
-        .findAlreadyExistingUrl(urlWriteDto.getUrl(), urlWriteDto.getExpiringAt());
+    Optional<Url> optionalUrl = urlRepository.findByUrl(urlWriteDto.getUrl())
+        .stream()
+        .filter(url -> Objects.equals(url.getExpiringAt(), urlWriteDto.getExpiringAt()))
+        .findFirst();
 
-    if (optionalUrl.isPresent()) {
+    if (optionalUrl.isPresent() && isNotExpiredUrl(optionalUrl.get())) {
       return urlMapper.convertUrlToUrlReadDto(optionalUrl.get());
     }
 
@@ -37,11 +40,19 @@ public class UrlServiceImpl implements UrlService {
   @Override
   public UrlReadDto getUrl(String encodedId) {
     Long decodedId = base62Service.decode(encodedId);
-    Url url = urlRepository
-        .findExistingNonExpiredUrl(decodedId, LocalDateTime.now())
-        .orElseThrow(() -> new ResourceNotFoundException(
-            "Invalid encoded id: " + encodedId + ". Url not found."));
+    Optional<Url> optionalUrl = urlRepository.findById(decodedId);
 
-    return urlMapper.convertUrlToUrlReadDto(url);
+    if (optionalUrl.isEmpty() || !isNotExpiredUrl(optionalUrl.get())) {
+      throw new ResourceNotFoundException("Invalid encoded id: " + encodedId + ". Url not found.");
+    }
+
+    return urlMapper.convertUrlToUrlReadDto(optionalUrl.get());
+  }
+
+  public boolean isNotExpiredUrl(Url url) {
+    if (url == null) {
+      return false;
+    }
+    return url.getExpiringAt() == null || url.getExpiringAt().isAfter(LocalDateTime.now());
   }
 }

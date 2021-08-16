@@ -3,8 +3,10 @@ package io.github.korzepadawid.urlshortener.services;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.catchThrowable;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.github.korzepadawid.urlshortener.api.v1.mappers.UrlMapper;
@@ -14,7 +16,9 @@ import io.github.korzepadawid.urlshortener.exceptions.ResourceNotFoundException;
 import io.github.korzepadawid.urlshortener.models.Url;
 import io.github.korzepadawid.urlshortener.repositories.UrlRepository;
 import java.time.LocalDateTime;
+import java.util.HashSet;
 import java.util.Optional;
+import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -37,58 +41,113 @@ class UrlServiceImplTest {
   @InjectMocks
   private UrlServiceImpl urlService;
 
-  private static final LocalDateTime CREATED_AT = LocalDateTime.now().minusDays(2);
+  private static final String HTTPS_STACKOVERFLOW_COM = "https://stackoverflow.com/";
   private static final String BASE62ENCODED_ID = "fhf2";
   private static final String SHORT_URL = "/" + BASE62ENCODED_ID;
-  private static final String HTTPS_STACKOVERFLOW_COM = "https://stackoverflow.com/";
   private static final Long DECODED_ID = 3641200L;
 
+  private Set<Url> urls;
   private Url url;
   private UrlWriteDto urlWriteDto;
   private UrlReadDto urlReadDto;
 
   @BeforeEach
   void setUp() {
-    url = Url.builder()
-        .id(DECODED_ID)
-        .url(HTTPS_STACKOVERFLOW_COM)
-        .expiringAt(null)
-        .createdAt(CREATED_AT)
-        .build();
+    urls = new HashSet<>();
 
     urlWriteDto = UrlWriteDto.builder()
         .url(HTTPS_STACKOVERFLOW_COM)
-        .expiringAt(null)
         .build();
 
     urlReadDto = UrlReadDto.builder()
-        .shortUrl(SHORT_URL)
         .longUrl(HTTPS_STACKOVERFLOW_COM)
-        .expiringAt(null)
+        .shortUrl(SHORT_URL)
         .build();
+
+    url = Url.builder()
+        .id(DECODED_ID)
+        .url(HTTPS_STACKOVERFLOW_COM)
+        .build();
+
   }
 
   @Test
-  void createUrl_WhenExistingNeverExpiringUrl_ThenReturnsOldUrlInsteadOfCreatingNew() {
-    when(urlRepository
-        .findAlreadyExistingUrl(eq(urlWriteDto.getUrl()), eq(urlWriteDto.getExpiringAt())))
-        .thenReturn(Optional.of(url));
+  void isNotExpiredUrl_WhenNull_ThenReturnsFalseInsteadOfNullPointerException() {
+    boolean result = urlService.isNotExpiredUrl(null);
+    assertThat(result).isFalse();
+  }
+
+  @Test
+  void isNotExpiredUrl_WhenExpiringAtIsNull_ThenReturnsTrue() {
+    boolean result = urlService.isNotExpiredUrl(Url.builder().expiringAt(null).build());
+    assertThat(result).isTrue();
+  }
+
+  @Test
+  void isNotExpiredUrl_WhenNotExpiredUrl_ThenReturnsTrue() {
+    final LocalDateTime expiringAt = LocalDateTime.now().plusSeconds(10);
+    boolean result = urlService.isNotExpiredUrl(Url.builder().expiringAt(expiringAt).build());
+    assertThat(result).isTrue();
+  }
+
+  @Test
+  void isNotExpiredUrl_WhenExpiredUrl_ThenReturnsFalse() {
+    final LocalDateTime expiringAt = LocalDateTime.now().minusSeconds(10);
+    boolean result = urlService.isNotExpiredUrl(Url.builder().expiringAt(expiringAt).build());
+    assertThat(result).isFalse();
+  }
+
+  @Test
+  void createUrl_WhenAlreadyExistingUrlAndExpiringAtIsNull_ThenReturnsExistingUrl() {
+    urls.add(url);
+
+    when(urlRepository.findByUrl(anyString())).thenReturn(urls);
     when(urlMapper.convertUrlToUrlReadDto(any(Url.class))).thenReturn(urlReadDto);
 
     UrlReadDto result = urlService.createUrl(urlWriteDto);
 
     assertThat(result)
         .isNotNull()
-        .hasFieldOrPropertyWithValue("shortUrl", SHORT_URL)
-        .hasFieldOrPropertyWithValue("longUrl", HTTPS_STACKOVERFLOW_COM)
+        .hasFieldOrPropertyWithValue("longUrl", urlReadDto.getLongUrl())
+        .hasFieldOrPropertyWithValue("shortUrl", urlReadDto.getShortUrl())
         .hasFieldOrPropertyWithValue("expiringAt", null);
+
+    verify(urlRepository, times(1)).findByUrl(anyString());
+    verify(urlRepository, times(0)).save(any());
   }
 
   @Test
-  void createUrl_WhenNonExistingOrExpiredUrl_ThenReturnsCreatedUrl() {
-    when(urlRepository
-        .findAlreadyExistingUrl(eq(urlWriteDto.getUrl()), eq(urlWriteDto.getExpiringAt())))
-        .thenReturn(Optional.empty());
+  void createUrl_WhenExistingAndValidUrl_ThenReturnsExistingUrl() {
+    final LocalDateTime expiringAt = LocalDateTime.now().plusSeconds(55);
+    url.setExpiringAt(expiringAt);
+    urlWriteDto.setExpiringAt(expiringAt);
+    urlReadDto.setExpiringAt(expiringAt);
+    urls.add(url);
+
+    when(urlRepository.findByUrl(anyString())).thenReturn(urls);
+    when(urlMapper.convertUrlToUrlReadDto(any(Url.class))).thenReturn(urlReadDto);
+
+    UrlReadDto result = urlService.createUrl(urlWriteDto);
+
+    assertThat(result)
+        .isNotNull()
+        .hasFieldOrPropertyWithValue("longUrl", urlReadDto.getLongUrl())
+        .hasFieldOrPropertyWithValue("shortUrl", urlReadDto.getShortUrl())
+        .hasFieldOrPropertyWithValue("expiringAt", expiringAt);
+
+    verify(urlRepository, times(1)).findByUrl(anyString());
+    verify(urlRepository, times(0)).save(any());
+  }
+
+
+  @Test
+  void createUrl_WhenNoMatch_ThenCreatesAndReturnsNewUrl() {
+    final LocalDateTime expiringAt = LocalDateTime.now().plusSeconds(55);
+    urlWriteDto.setExpiringAt(expiringAt);
+    urlReadDto.setExpiringAt(expiringAt);
+    urls.add(url);
+
+    when(urlRepository.findByUrl(anyString())).thenReturn(urls);
     when(urlMapper.convertUrlWriteDtoToUrl(any(UrlWriteDto.class))).thenReturn(url);
     when(urlRepository.save(any(Url.class))).thenReturn(url);
     when(urlMapper.convertUrlToUrlReadDto(any(Url.class))).thenReturn(urlReadDto);
@@ -97,16 +156,18 @@ class UrlServiceImplTest {
 
     assertThat(result)
         .isNotNull()
-        .hasFieldOrPropertyWithValue("shortUrl", SHORT_URL)
-        .hasFieldOrPropertyWithValue("longUrl", HTTPS_STACKOVERFLOW_COM)
-        .hasFieldOrPropertyWithValue("expiringAt", null);
+        .hasFieldOrPropertyWithValue("longUrl", urlReadDto.getLongUrl())
+        .hasFieldOrPropertyWithValue("shortUrl", urlReadDto.getShortUrl())
+        .hasFieldOrPropertyWithValue("expiringAt", expiringAt);
+
+    verify(urlRepository, times(1)).findByUrl(anyString());
+    verify(urlRepository, times(1)).save(any());
   }
 
   @Test
-  void getUrl_WhenNonExistingOrExpiredUrl_ThenThrowsResourceNotFoundException() {
+  void getUrl_WhenNoMatch_ThenThrowsResourceNotFoundException() {
     when(base62Service.decode(anyString())).thenReturn(DECODED_ID);
-    when(urlRepository.findExistingNonExpiredUrl(eq(DECODED_ID),
-        any(LocalDateTime.class))).thenReturn(Optional.empty());
+    when(urlRepository.findById(anyLong())).thenReturn(Optional.empty());
 
     Throwable exception = catchThrowable(() -> urlService.getUrl(BASE62ENCODED_ID));
 
@@ -116,18 +177,48 @@ class UrlServiceImplTest {
   }
 
   @Test
-  void getUrl_WhenExistingUrl_ThenReturnsUrl() {
+  void getUrl_WhenMatchButUrlHasAlreadyExpired_ThenThrowsResourceNotFoundException() {
+    url.setExpiringAt(LocalDateTime.now().minusSeconds(1));
     when(base62Service.decode(anyString())).thenReturn(DECODED_ID);
-    when(urlRepository.findExistingNonExpiredUrl(eq(DECODED_ID),
-        any(LocalDateTime.class))).thenReturn(Optional.of(url));
+    when(urlRepository.findById(anyLong())).thenReturn(Optional.of(url));
+
+    Throwable exception = catchThrowable(() -> urlService.getUrl(BASE62ENCODED_ID));
+
+    assertThat(exception)
+        .isInstanceOf(ResourceNotFoundException.class)
+        .hasMessageContaining("not found");
+  }
+
+  @Test
+  void getUrl_WhenMatchAndExpiringAtIsNull_ThenReturnsUrl() {
+    when(base62Service.decode(anyString())).thenReturn(DECODED_ID);
+    when(urlRepository.findById(anyLong())).thenReturn(Optional.of(url));
     when(urlMapper.convertUrlToUrlReadDto(any(Url.class))).thenReturn(urlReadDto);
 
     UrlReadDto result = urlService.getUrl(BASE62ENCODED_ID);
 
     assertThat(result)
         .isNotNull()
-        .hasFieldOrPropertyWithValue("shortUrl", SHORT_URL)
-        .hasFieldOrPropertyWithValue("longUrl", HTTPS_STACKOVERFLOW_COM)
-        .hasFieldOrPropertyWithValue("expiringAt", null);
+        .hasFieldOrPropertyWithValue("longUrl", urlReadDto.getLongUrl())
+        .hasFieldOrPropertyWithValue("shortUrl", urlReadDto.getShortUrl())
+        .hasFieldOrPropertyWithValue("expiringAt", urlReadDto.getExpiringAt());
+  }
+
+  @Test
+  void getUrl_WhenMatchAndExpiringAtValid_ThenReturnsUrl() {
+    final LocalDateTime expiringAt = LocalDateTime.now().plusSeconds(10);
+    url.setExpiringAt(expiringAt);
+    urlReadDto.setExpiringAt(expiringAt);
+    when(base62Service.decode(anyString())).thenReturn(DECODED_ID);
+    when(urlRepository.findById(anyLong())).thenReturn(Optional.of(url));
+    when(urlMapper.convertUrlToUrlReadDto(any(Url.class))).thenReturn(urlReadDto);
+
+    UrlReadDto result = urlService.getUrl(BASE62ENCODED_ID);
+
+    assertThat(result)
+        .isNotNull()
+        .hasFieldOrPropertyWithValue("longUrl", urlReadDto.getLongUrl())
+        .hasFieldOrPropertyWithValue("shortUrl", urlReadDto.getShortUrl())
+        .hasFieldOrPropertyWithValue("expiringAt", expiringAt);
   }
 }
