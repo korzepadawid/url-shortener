@@ -47,7 +47,7 @@ class IndexControllerTest {
   void redirectToOriginalUrl_WhenNotExistingOrExpiredUrl_ThenReturnsStatus404() throws Exception {
     when(urlService.getUrl(anyString())).thenThrow(new ResourceNotFoundException(ERROR_MESSAGE));
 
-    mockMvc.perform(get(IndexController.BASE_URL + BASE62ENCODED_ID))
+    mockMvc.perform(get(IndexController.BASE_URL + "/"  + BASE62ENCODED_ID))
         .andExpect(status().isNotFound())
         .andExpect(jsonPath("$.message", is(ERROR_MESSAGE)));
   }
@@ -61,7 +61,7 @@ class IndexControllerTest {
         .build();
     when(urlService.getUrl(anyString())).thenReturn(urlReadDto);
 
-    mockMvc.perform(get(IndexController.BASE_URL + BASE62ENCODED_ID))
+    mockMvc.perform(get(IndexController.BASE_URL + "/" + BASE62ENCODED_ID))
         .andExpect(status().is3xxRedirection())
         .andExpect(redirectedUrl(urlReadDto.getLongUrl()));
   }

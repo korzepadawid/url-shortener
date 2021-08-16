@@ -15,11 +15,11 @@ import org.springframework.web.bind.annotation.RequestMapping;
 @RequestMapping(IndexController.BASE_URL)
 public class IndexController {
 
-  public static final String BASE_URL = "/";
+  public static final String BASE_URL = "";
 
   private final UrlService urlService;
 
-  @GetMapping("{encodedId}")
+  @GetMapping("/{encodedId}")
   public String redirectToOriginalUrl(@PathVariable String encodedId) {
     UrlReadDto urlReadDto = urlService.getUrl(encodedId);
     String originalUrl = urlReadDto.getLongUrl();
