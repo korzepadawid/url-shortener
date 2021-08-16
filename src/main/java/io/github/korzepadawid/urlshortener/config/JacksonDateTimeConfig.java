@@ -11,15 +11,16 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class JacksonDateTimeConfig {
 
+  public static final String DATE_PATTERN = "yyyy-MM-dd HH:mm:ss";
+
   @Bean
   public SimpleModule module() {
     SimpleModule module = new SimpleModule();
     module
-        .addSerializer(LocalDateTime.class, new LocalDateTimeSerializer(DateTimeFormatter.ofPattern(
-            "yyyy-MM-dd HH:mm:ss")));
+        .addSerializer(LocalDateTime.class,
+            new LocalDateTimeSerializer(DateTimeFormatter.ofPattern(DATE_PATTERN)));
     module.addDeserializer(LocalDateTime.class,
-        new LocalDateTimeDeserializer(DateTimeFormatter.ofPattern(
-            "yyyy-MM-dd HH:mm:ss")));
+        new LocalDateTimeDeserializer(DateTimeFormatter.ofPattern(DATE_PATTERN)));
     return module;
   }
 }
