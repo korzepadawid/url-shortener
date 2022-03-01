@@ -5,7 +5,8 @@
 
 # URL Shortener ✂
 
-REST API for url-shortener web-app.
+REST API for url-shortener web-app. Base url of
+live-demo [https://shortened-urls.herokuapp.com/](https://shortened-urls.herokuapp.com/).
 
 ## Technologies
 
@@ -36,7 +37,7 @@ ID              URL
 
 After saving the requested URL, you will receive an encoded(Base62) database id,
 e.g. `13943437364 -> fdDf12`. You can use `fdDf12` to navigate
-to [https://www.nytimes.com/](https://www.nytimes.com/). When you enter `localhost:8080/fdDf12`,
+to [https://www.nytimes.com/](https://www.nytimes.com/). When you enter `https://shortened-urls.herokuapp.com/api/v1/urls/fdDf12`,
 the `fdDf12` is going to be decoded to decimal number
 (`fdDf12 -> 13943437364`)
 in order to navigate you to [https://www.nytimes.com/](https://www.nytimes.com/).
@@ -53,7 +54,7 @@ Base62 improves the scalability of the system, let's have a look at the possible
 
 ## Using REST API
 
-Send `POST` request to `localhost:8080/api/v1/urls` in order to get your shortened URL.
+Send `POST` request to `https://shortened-urls.herokuapp.com/api/v1/urls/api/v1/urls` in order to get your shortened URL.
 
 ```json
 {
@@ -74,7 +75,7 @@ look like this:
 ```
 
 Right now you can navigate to [https://www.tensorflow.org/](https://www.tensorflow.org/) by
-entering `localhost:8080//fdDf12` in your web-browser.
+entering `https://shortened-urls.herokuapp.com/api/v1/urls/fdDf12` in your web-browser.
 
 **Important!** You can't save same url with the same `expirationAt` for the second time.
 
