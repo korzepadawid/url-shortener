@@ -54,7 +54,7 @@ Base62 improves the scalability of the system, let's have a look at the possible
 
 ## Using REST API
 
-Send `POST` request to `https://shortened-urls.herokuapp.com/api/v1/urls/api/v1/urls` in order to get your shortened URL.
+Send `POST` request to `https://shortened-urls.herokuapp.com/api/v1/urls` in order to get your shortened URL.
 
 ```json
 {
